@@ -95,6 +95,14 @@ void irq_handler(void)
 		write32(HW_ARMIRQFLAG, IRQF_SDHC);
 		sdhc_irq();
 	}
+	if (flags & IRQF_OHCI0) {
+		gecko_printf("IRQ: OHCI0\n");
+		gecko_printf("IRQ0-test: 0x%08x\n", flags);
+	}
+	if (flags & IRQF_OHCI1) {
+		gecko_printf("IRQ: OHCI1\n");
+		gecko_printf("IRQ1-test: 0x%08x\n", flags);
+	}
 	
 	flags &= ~IRQF_ALL;
 	if(flags) {
