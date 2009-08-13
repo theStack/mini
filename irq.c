@@ -18,6 +18,7 @@ Copyright (C) 2009			Andre Heider "dhewg" <dhewg@wiibrew.org>
 #include "crypto.h"
 #include "nand.h"
 #include "sdhcvar.h"
+#include "ohci.h"
 
 static u32 _alarm_frequency = 0;
 
@@ -97,11 +98,11 @@ void irq_handler(void)
 	}
 	if (flags & IRQF_OHCI0) {
 		gecko_printf("IRQ: OHCI0\n");
-		gecko_printf("IRQ0-test: 0x%08x\n", flags);
+		ohci0_irq();
 	}
 	if (flags & IRQF_OHCI1) {
 		gecko_printf("IRQ: OHCI1\n");
-		gecko_printf("IRQ1-test: 0x%08x\n", flags);
+		ohci1_irq();
 	}
 	
 	flags &= ~IRQF_ALL;

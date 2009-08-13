@@ -4,4 +4,8 @@ git_version.h
 *.elf
 *.map
 *~
+*.diff
 *.o
+tags
+cscope.out
+*.swp

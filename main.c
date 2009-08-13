@@ -29,6 +29,7 @@ Copyright (C) 2009		John Kelley <wiidev@kelley.ca>
 #include "nand.h"
 #include "boot2.h"
 #include "git_version.h"
+#include "ohci.h"
 
 #define PPC_BOOT_FILE "/bootmii/ppcboot.elf"
 
@@ -77,6 +78,9 @@ u32 _main(void *base)
 
 	gecko_printf("Initializing SDHC...\n");
 	sdhc_init();
+	
+	gecko_printf("Initializing OHCI...\n");
+	ohci_init();
 
 	gecko_printf("Mounting SD...\n");
 	fres = f_mount(0, &fatfs);
@@ -101,6 +105,9 @@ u32 _main(void *base)
 	}
 
 	gecko_printf("Going into IPC mainloop...\n");
+	//blue leds \o/
+	write32(0x0d8000c0, 0x8020);
+
 	vector = ipc_process_slow();
 	gecko_printf("IPC mainloop done!\n");
 	gecko_printf("Shutting down IPC...\n");
