@@ -202,8 +202,12 @@ Copyright (C) 2008, 2009	John Kelley <wiidev@kelley.ca>
 #define 	OHCI1_HC_RH_STATUS 		 	(OHCI1_REG_BASE + 0x50)
 
 /* EHCI Registers */
-
 #define 	EHCI_REG_BASE 		0xd040000
+
+/* stolen from mikep2 patched linux kernel: drivers/usb/host/ohci-mipc.c */
+#define		EHCI_CTL			(EHCI_REG_BASE + 0xCC)
+#define		EHCI_CTL_OH0INTE		(1<<11)	/* oh0 interrupt enable */
+#define		EHCI_CTL_OH1INTE		(1<<12)	/* oh1 interrupt enable */
 
 /* EXI Registers */
 

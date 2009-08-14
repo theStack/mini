@@ -43,6 +43,9 @@ void ohci_init() {
 	* see output in ohci.default
 	*/
 
+	/* enable interrupts of both usb host controllers */
+	set32(EHCI_CTL, EHCI_CTL_OH0INTE | EHCI_CTL_OH1INTE | 0xe0000);
+
 	dbg_op_state();
 	gecko_printf("ohci-- OHCI0_HC_FM_INTERVAL: %X\n", read32(OHCI0_HC_FM_INTERVAL));
 	gecko_printf("ohci-- set OHCI_HCR\n");
