@@ -270,9 +270,11 @@ u32 dma_addr(void *p)
 	u32 addr = (u32)p;
 
 	switch(addr>>20) {
-		case 0xfff:
-		case 0x0d4:
 		case 0x0dc:
+			gecko_printf("WOOOOOOOOOOOOOOOT: 0x0dc");
+		case 0xfff:
+			gecko_printf("WOOOOOOOOOOOOOOOT: 0xfff");
+		case 0x0d4:
 			if(read32(HW_MEMMIRR) & 0x20) {
 				addr ^= 0x10000;
 			}
