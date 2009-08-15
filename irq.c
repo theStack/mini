@@ -99,10 +99,12 @@ void irq_handler(void)
 	if (flags & IRQF_OHCI0) {
 		gecko_printf("IRQ: OHCI0\n");
 		ohci0_irq();
+		write32(HW_ARMIRQFLAG, IRQF_OHCI0);
 	}
 	if (flags & IRQF_OHCI1) {
 		gecko_printf("IRQ: OHCI1\n");
 		ohci1_irq();
+		write32(HW_ARMIRQFLAG, IRQF_OHCI1);
 	}
 	
 	flags &= ~IRQF_ALL;

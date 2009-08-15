@@ -16,7 +16,7 @@ Copyright (C) 2009	Sebastian Falbesoner <sebastian.falbesoner@gmail.com>
 #include "memory.h"
 #include "irq.h"
 
-struct ohci0_hcca hcca;
+static struct ohci_hcca hcca_oh0;
 
 static void dbg_op_state() {
 	switch (read32(OHCI0_HC_CONTROL) & OHCI_CTRL_HCFS) {
@@ -37,9 +37,8 @@ static void dbg_op_state() {
 
 
 void ohci_init() {
-	u32 tw = 0;
 	gecko_printf("ohci-- init\n");
-
+	dbg_op_state();
 	/*
 	u32 i = 0;
 	for(; i <= 0x200; i+=4) {
@@ -52,33 +51,23 @@ void ohci_init() {
 	/* enable interrupts of both usb host controllers */
 	set32(EHCI_CTL, EHCI_CTL_OH0INTE | EHCI_CTL_OH1INTE | 0xe0000);
 
-	dbg_op_state();
-	gecko_printf("ohci-- OHCI0_HC_FM_INTERVAL: %X\n", read32(OHCI0_HC_FM_INTERVAL));
-	gecko_printf("ohci-- set OHCI_HCR\n");
+	/* reset HC */
+	set32(OHCI0_HC_COMMAND_STATUS, OHCI_HCR);
 
-	switch(read32(OHCI0_HC_CONTROL) & OHCI_CTRL_HCFS) {
-		case OHCI_USB_OPER:
-			tw = 0;
-			break;
-		case OHCI_USB_RESUME:
-		case OHCI_USB_SUSPEND:
-			write32(OHCI0_HC_CONTROL, OHCI_CTRL_RWC);
-			set32(OHCI0_HC_CONTROL, OHCI_USB_RESUME);
-			tw = 10;
-			break;
-		case OHCI_USB_RESET:
-			write32(OHCI0_HC_CONTROL, OHCI_CTRL_RWC);
-			set32(OHCI0_HC_CONTROL, OHCI_USB_RESET);
-			tw = 50;
-			break;
+	/* wait max. 30us */
+	u32 ts = 30;
+	while ((read32(OHCI0_HC_COMMAND_STATUS) & OHCI_HCR) != 0) {
+		if(--ts == 0) {
+			gecko_printf("ohci-- FAILED");
+			return;
+		}
+		udelay(1);
 	}
 
-	udelay(tw*1000);
+	/* disable interrupts; 2ms timelimit here! 
+ 	   now we're in the SUSPEND state ... must go OPERATIONAL
+	   within 2msec else HC enters RESUME */
 
-	write32(OHCI0_HC_HCCA, dma_addr(&hcca));
-
-
-	/*disable interrupts; 2ms timelimit here! */
 	u32 cookie = irq_kill();
 
 	/* Tell the controller where the control and bulk lists are
@@ -86,10 +75,33 @@ void ohci_init() {
 	write32(OHCI0_HC_CTRL_HEAD_ED, 0);
 	write32(OHCI0_HC_BULK_HEAD_ED, 0);
 
+	/* set hcca adress */
+	write32(OHCI0_HC_HCCA, dma_addr(&hcca_oh0));
 
+
+	/* set periodicstart */
+#define FIT (1<<31)
+	u32 fmInterval = read32(OHCI0_HC_FM_INTERVAL) &0x3fff;
+	u32 fit = read32(OHCI0_HC_FM_INTERVAL) & FIT;
+
+	write32(OHCI0_HC_FM_INTERVAL, read32(OHCI0_HC_FM_INTERVAL) | (fit ^ FIT));
+	write32(OHCI0_HC_PERIODIC_START, ((9*fmInterval)/10)&0x3fff);
+
+	/* testing bla */
+	if ((read32(OHCI0_HC_FM_INTERVAL) & 0x3fff0000) == 0 || !read32(OHCI0_HC_PERIODIC_START)) {
+		gecko_printf("ohci-- w00t, fail!! see ohci-hcd.c:669\n");
+	}
+	
 	/* start HC operations */
-	write32(OHCI0_HC_CONTROL, OHCI_CTRL_RWC);
 	set32(OHCI0_HC_CONTROL, OHCI_CONTROL_INIT | OHCI_USB_OPER);
+
+	/* wake on ConnectStatusChange, matching external hubs */
+	set32(OHCI0_HC_RH_STATUS, RH_HS_DRWE);
+
+	/* Choose the interrupts we care about now, others later on demand */
+	write32(OHCI0_HC_INT_STATUS, ~0);
+	write32(OHCI0_HC_INT_ENABLE, OHCI_INTR_INIT);
+
 
 	irq_restore(cookie);
 
@@ -102,6 +114,7 @@ void ohci_init() {
 
 void ohci0_irq() {
 	gecko_printf("ohci0_irq\n");
+	write32(OHCI0_HC_INT_STATUS, ~0);
 }
 
 void ohci1_irq() {
