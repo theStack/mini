@@ -35,16 +35,21 @@ static void dbg_op_state() {
 	}
 }
 
+static void dbg_dump_registers() {
+	gecko_printf("===============OHCI-DUMP=========================\n");
+	u32 i = 0;
+	for(; i <= 0x60; i+=4) {
+		gecko_printf("0x0d050000 + %X: %X\n", i, read32(0x0d050000+i));
+		udelay(10000); //'cause usb gecko is lame
+	}
+	gecko_printf("=================================================\n");
+}
+
 
 void ohci_init() {
 	gecko_printf("ohci-- init\n");
 	dbg_op_state();
 	/*
-	u32 i = 0;
-	for(; i <= 0x200; i+=4) {
-		gecko_printf("0x0d050000 + %X: %X\n", i, read32(0x0d050000+i));
-		udelay(10000); //'cause usb gecko is lame
-	}
 	* see output in ohci.default
 	*/
 
@@ -64,6 +69,13 @@ void ohci_init() {
 
 	/* reset HC */
 	set32(OHCI0_HC_COMMAND_STATUS, OHCI_HCR);
+
+	dbg_dump_registers();
+
+	/* clear RHSC-Interrupt flag -- needed?!?! */
+	gecko_printf("intr_rhsc(1): %08X\n", read32(OHCI0_HC_INT_STATUS));
+	set32(OHCI0_HC_INT_STATUS, OHCI_INTR_RHSC);
+	gecko_printf("intr_rhsc(2): %08X\n", read32(OHCI0_HC_INT_STATUS));
 
 	/* wait max. 30us */
 	u32 ts = 30;
@@ -107,10 +119,14 @@ void ohci_init() {
 		gecko_printf("ohci-- w00t2, fail!! see ohci-hcd.c:669\n");
 	}
 	
+	set32(OHCI0_HC_CONTROL, OHCI_CTRL_PLE | OHCI_CTRL_IE | OHCI_CTRL_CLE | OHCI_CTRL_BLE);
+
 	/* start HC operations */
 	set32(OHCI0_HC_CONTROL, OHCI_CONTROL_INIT | OHCI_USB_OPER);
+	//set32(OHCI0_HC_CONTROL, OHCI_USB_OPER);
 
 	/* wake on ConnectStatusChange, matching external hubs */
+	/* but ppcboot fails?! */
 	set32(OHCI0_HC_RH_STATUS, RH_HS_DRWE);
 
 	/* Choose the interrupts we care about now, others later on demand */
