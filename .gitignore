@@ -5,3 +5,5 @@ git_version.h
 *.map
 *~
 *.o
+cscope.out
+tags
