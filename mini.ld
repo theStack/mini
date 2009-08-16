@@ -22,7 +22,7 @@ MEMORY {
 	sram		: ORIGIN = 0xffff0000, LENGTH = 64K
 	sram2		: ORIGIN = 0xfffe0000, LENGTH = 16K
 	pagetable	: ORIGIN = 0xfffe4000, LENGTH = 16K
-	mem2		: ORIGIN = 0x13f00000, LENGTH = 1M
+	mem2		: ORIGIN = 0x13e00000, LENGTH = 1M
 }
 
 __mem2_area_start = ORIGIN(mem2);
@@ -33,6 +33,9 @@ __page_table = ORIGIN(pagetable);
 
 SECTIONS
 {
+	_sbrk_start = 0x13f00000;
+	_sbrk_end = 0x13ffffff;
+
 	.rodata.mem2 :
 	{
 		*(.rodata.mem2)

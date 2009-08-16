@@ -29,6 +29,7 @@ Copyright (C) 2009		John Kelley <wiidev@kelley.ca>
 #include "nand.h"
 #include "boot2.h"
 #include "git_version.h"
+#include "malloc.h"
 
 #define PPC_BOOT_FILE "/bootmii/ppcboot.elf"
 
@@ -53,6 +54,7 @@ u32 _main(void *base)
 		read32(0xffffff00), read32(0xffffff04), read32(0xffffff08));
 	gecko_printf("          %08x %08x %08x\n",
 		read32(0xffffff0c), read32(0xffffff10), read32(0xffffff14));
+
 
 	irq_initialize();
 	irq_enable(IRQ_TIMER);
@@ -99,6 +101,22 @@ u32 _main(void *base)
 	}
 
 	gecko_printf("Going into IPC mainloop...\n");
+
+#define strc "laksdjflaskdjflaksdfjlaskdjflaksdjflkasjdflaksdjf"
+	char *blah0 = malloc(sizeof(char)*1024);
+	u8 ret1 = strlcpy(blah0, strc, sizeof(strc));
+
+	gecko_printf("malloc-test:\nblah0: %p\n%s\n%d\n", blah0, blah0, ret1);
+
+#define fun
+#ifdef fun
+	char *blah1 = malloc(sizeof(char)*512);
+	gecko_printf("malloc-test:\nblah1: %p\n", blah1);
+	free(blah1);
+#endif
+
+	free(blah0);
+
 	vector = ipc_process_slow();
 	gecko_printf("IPC mainloop done!\n");
 	gecko_printf("Shutting down IPC...\n");
