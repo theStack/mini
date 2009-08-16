@@ -31,7 +31,7 @@ typedef volatile signed short vs16;
 typedef volatile signed int vs32;
 typedef volatile signed long long vs64;
 
-typedef s32 size_t;
+typedef u32 size_t;
 
 #define NULL ((void *)0)
 

@@ -30,6 +30,7 @@ Copyright (C) 2009		John Kelley <wiidev@kelley.ca>
 #include "boot2.h"
 #include "git_version.h"
 #include "ohci.h"
+#include "malloc.h"
 
 #define PPC_BOOT_FILE "/bootmii/ppcboot.elf"
 
@@ -54,6 +55,7 @@ u32 _main(void *base)
 		read32(0xffffff00), read32(0xffffff04), read32(0xffffff08));
 	gecko_printf("          %08x %08x %08x\n",
 		read32(0xffffff0c), read32(0xffffff10), read32(0xffffff14));
+
 
 	irq_initialize();
 	irq_enable(IRQ_TIMER);
@@ -105,8 +107,10 @@ u32 _main(void *base)
 	}
 
 	gecko_printf("Going into IPC mainloop...\n");
+
 	//blue leds \o/
 	write32(0x0d8000c0, 0x8020);
+
 
 	vector = ipc_process_slow();
 	gecko_printf("IPC mainloop done!\n");
