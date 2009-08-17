@@ -74,9 +74,6 @@ struct usb_hcd {
 
 	struct timer_list	rh_timer;	/* drives root-hub polling */
 	struct urb		*status_urb;	/* the current status urb */
-#ifdef CONFIG_PM
-	struct work_struct	wakeup_work;	/* for remote wakeup */
-#endif
 
 	/*
 	 * hardware info/state
@@ -250,22 +247,6 @@ extern void usb_remove_hcd(struct usb_hcd *hcd);
 struct platform_device;
 extern void usb_hcd_platform_shutdown(struct platform_device *dev);
 
-#ifdef CONFIG_PCI
-struct pci_dev;
-struct pci_device_id;
-extern int usb_hcd_pci_probe(struct pci_dev *dev,
-				const struct pci_device_id *id);
-extern void usb_hcd_pci_remove(struct pci_dev *dev);
-
-#ifdef CONFIG_PM
-extern int usb_hcd_pci_suspend(struct pci_dev *dev, pm_message_t msg);
-extern int usb_hcd_pci_resume(struct pci_dev *dev);
-#endif /* CONFIG_PM */
-
-extern void usb_hcd_pci_shutdown(struct pci_dev *dev);
-
-#endif /* CONFIG_PCI */
-
 /* pci-ish (pdev null is ok) buffer alloc/mapping support */
 int hcd_buffer_create(struct usb_hcd *hcd);
 void hcd_buffer_destroy(struct usb_hcd *hcd);
@@ -394,17 +375,10 @@ extern int usb_find_interface_driver(struct usb_device *dev,
 
 #define usb_endpoint_out(ep_dir)	(!((ep_dir) & USB_DIR_IN))
 
-#ifdef CONFIG_PM
-extern void usb_hcd_resume_root_hub(struct usb_hcd *hcd);
-extern void usb_root_hub_lost_power(struct usb_device *rhdev);
-extern int hcd_bus_suspend(struct usb_device *rhdev, pm_message_t msg);
-extern int hcd_bus_resume(struct usb_device *rhdev, pm_message_t msg);
-#else
 static inline void usb_hcd_resume_root_hub(struct usb_hcd *hcd)
 {
 	return;
 }
-#endif /* CONFIG_PM */
 
 /*
  * USB device fs stuff
@@ -430,49 +404,11 @@ static inline void usbfs_cleanup(void) { }
 
 /*-------------------------------------------------------------------------*/
 
-#if defined(CONFIG_USB_MON) || defined(CONFIG_USB_MON_MODULE)
-
-struct usb_mon_operations {
-	void (*urb_submit)(struct usb_bus *bus, struct urb *urb);
-	void (*urb_submit_error)(struct usb_bus *bus, struct urb *urb, int err);
-	void (*urb_complete)(struct usb_bus *bus, struct urb *urb, int status);
-	/* void (*urb_unlink)(struct usb_bus *bus, struct urb *urb); */
-};
-
-extern struct usb_mon_operations *mon_ops;
-
-static inline void usbmon_urb_submit(struct usb_bus *bus, struct urb *urb)
-{
-	if (bus->monitored)
-		(*mon_ops->urb_submit)(bus, urb);
-}
-
-static inline void usbmon_urb_submit_error(struct usb_bus *bus, struct urb *urb,
-    int error)
-{
-	if (bus->monitored)
-		(*mon_ops->urb_submit_error)(bus, urb, error);
-}
-
-static inline void usbmon_urb_complete(struct usb_bus *bus, struct urb *urb,
-		int status)
-{
-	if (bus->monitored)
-		(*mon_ops->urb_complete)(bus, urb, status);
-}
-
-int usb_mon_register(struct usb_mon_operations *ops);
-void usb_mon_deregister(void);
-
-#else
-
 static inline void usbmon_urb_submit(struct usb_bus *bus, struct urb *urb) {}
 static inline void usbmon_urb_submit_error(struct usb_bus *bus, struct urb *urb,
     int error) {}
 static inline void usbmon_urb_complete(struct usb_bus *bus, struct urb *urb,
 		int status) {}
-
-#endif /* CONFIG_USB_MON || CONFIG_USB_MON_MODULE */
 
 /*-------------------------------------------------------------------------*/
 
