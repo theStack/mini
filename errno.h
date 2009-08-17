@@ -170,3 +170,13 @@
 #define	ERESTART	-1		/* restart syscall */
 #define	EJUSTRETURN	-2		/* don't modify regs, just return */
 #endif
+
+
+/* linux usbstack adaption */
+#define	EPROTO		71	/* Protocol error */
+#define	ETIME		62	/* Timer expired */
+#define	EOVERFLOW	75	/* Value too large for defined data type */
+#define	EREMOTEIO	121	/* Remote I/O error */
+#define	ECOMM		70	/* Communication error on send */
+#define ENOSR       63  /* Out of streams resources */
+

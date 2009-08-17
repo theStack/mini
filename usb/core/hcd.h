@@ -16,12 +16,6 @@
  * Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifndef __USB_CORE_HCD_H
-#define __USB_CORE_HCD_H
-
-#ifdef __KERNEL__
-
-#include <linux/rwsem.h>
 
 #define MAX_TOPO_LEVEL		6
 

@@ -1,3 +1,4 @@
+#include "../adaptation.h"
 /*
  * OHCI HCD (Host Controller Driver) for USB.
  *
@@ -12,8 +13,10 @@
  * __leXX (normally) or __beXX (given OHCI_BIG_ENDIAN), depending on the
  * host controller implementation.
  */
-typedef __u32 __bitwise __hc32;
-typedef __u16 __bitwise __hc16;
+typedef u32 __hc32;
+typedef u16 __hc16;
+
+
 
 /*
  * Some platforms have weird constraints when accessing memory.
@@ -140,7 +143,7 @@ struct td {
 	__hc16		hwPSW [MAXPSW];
 
 	/* rest are purely for the driver's use */
-	ohci_fld(__u8)	index;
+	u32		index;
 	struct ed	*ed;
 	struct td	*td_hash;	/* dma-->td hashtable */
 	struct td	*next_dl_td;
@@ -367,8 +370,6 @@ typedef struct urb_priv {
  */
 
 struct ohci_hcd {
-	spinlock_t		lock;
-
 	/*
 	 * I/O memory used to communicate with the HC (dma-consistent)
 	 */
@@ -427,13 +428,6 @@ struct ohci_hcd {
 #define	OHCI_QUIRK_WII		0x400			/* Hollywood chipset */
 	// there are also chip quirks/bugs in init logic
 
-	struct work_struct	nec_work;	/* Worker for NEC quirk */
-
-	/* Needed for ZF Micro quirk */
-	struct timer_list	unlink_watchdog;
-	unsigned		eds_scheduled;
-	struct ed		*ed_to_check;
-	unsigned		zf_delay;
 
 #ifdef DEBUG
 	struct dentry		*debug_dir;
@@ -443,33 +437,18 @@ struct ohci_hcd {
 #endif
 };
 
-#ifdef CONFIG_PCI
 static inline int quirk_nec(struct ohci_hcd *ohci)
 {
-	return ohci->flags & OHCI_QUIRK_NEC;
+	return 0==ohci;
 }
 static inline int quirk_zfmicro(struct ohci_hcd *ohci)
 {
-	return ohci->flags & OHCI_QUIRK_ZFMICRO;
+	return 0==ohci;
 }
 static inline int quirk_amdiso(struct ohci_hcd *ohci)
 {
-	return ohci->flags & OHCI_QUIRK_AMD_ISO;
+	return 0==ohci;
 }
-#else
-static inline int quirk_nec(struct ohci_hcd *ohci)
-{
-	return 0;
-}
-static inline int quirk_zfmicro(struct ohci_hcd *ohci)
-{
-	return 0;
-}
-static inline int quirk_amdiso(struct ohci_hcd *ohci)
-{
-	return 0;
-}
-#endif
 
 /* convert between an hcd pointer and the corresponding ohci_hcd */
 static inline struct ohci_hcd *hcd_to_ohci (struct usb_hcd *hcd)
