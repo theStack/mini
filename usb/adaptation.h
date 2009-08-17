@@ -2,6 +2,7 @@ typedef u32 dma_addr_t;
 
 typedef u8 __u8;
 typedef u16 __u16;
+typedef u32 __u32;
 
 typedef u16 __le16;
 
@@ -12,6 +13,8 @@ struct list_head {
 typedef struct {
 	volatile int counter;
 } atomic_t;
+
+#define BITS_PER_LONG 64
 
 #define __iomem
 

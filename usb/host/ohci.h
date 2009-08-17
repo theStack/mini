@@ -1,4 +1,3 @@
-#include "../adaptation.h"
 /*
  * OHCI HCD (Host Controller Driver) for USB.
  *

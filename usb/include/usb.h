@@ -1,4 +1,5 @@
 #include "ch9.h"
+#include "mod_devicetable.h"
 
 #define USB_MAJOR			180
 #define USB_DEVICE_MAJOR		189
@@ -757,7 +758,6 @@ static inline int usb_make_path(struct usb_device *dev, char *buf, size_t size)
 
 /* Stuff for dynamic usb ids */
 struct usb_dynids {
-	spinlock_t lock;
 	struct list_head list;
 };
 

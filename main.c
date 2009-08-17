@@ -29,6 +29,9 @@ Copyright (C) 2009		John Kelley <wiidev@kelley.ca>
 #include "nand.h"
 #include "boot2.h"
 #include "git_version.h"
+
+/*usb*/
+#include "usb/adaptation.h"
 #include "usb/include/usb.h"
 #include "usb/core/hcd.h"
 #include "usb/host/ohci.h"
