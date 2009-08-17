@@ -690,11 +690,11 @@ static inline u16 ohci_frame_no(const struct ohci_hcd *ohci)
 {
 	u32 tmp;
 	if (big_endian_desc(ohci)) {
-		tmp = be32_to_cpup((__force __be32 *)&ohci->hcca->frame_no);
+		tmp = be32_to_cpup((__be32 *)&ohci->hcca->frame_no);
 		if (!big_endian_frame_no_quirk(ohci))
 			tmp >>= 16;
 	} else
-		tmp = le32_to_cpup((__force __le32 *)&ohci->hcca->frame_no);
+		tmp = le32_to_cpup((__le32 *)&ohci->hcca->frame_no);
 
 	return (u16)tmp;
 }
