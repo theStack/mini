@@ -64,11 +64,6 @@
 #define	IR_DISABLE
 #endif
 
-#ifdef CONFIG_ARCH_OMAP
-/* OMAP doesn't support IR (no SMM; not needed) */
-#define	IR_DISABLE
-#endif
-
 /*-------------------------------------------------------------------------*/
 
 static const char	hcd_name [] = "ohci_hcd";
@@ -81,14 +76,6 @@ static void ohci_dump (struct ohci_hcd *ohci, int verbose);
 static int ohci_init (struct ohci_hcd *ohci);
 static void ohci_stop (struct usb_hcd *hcd);
 
-#if defined(CONFIG_PM) || defined(CONFIG_PCI)
-static int ohci_restart (struct ohci_hcd *ohci);
-#endif
-
-#ifdef CONFIG_PCI
-static void quirk_amd_pll(int state);
-static void amd_iso_dev_put(void);
-#else
 static inline void quirk_amd_pll(int state)
 {
 	return;
@@ -97,8 +84,6 @@ static inline void amd_iso_dev_put(void)
 {
 	return;
 }
-#endif
-
 
 #include "ohci-hub.c"
 #include "ohci-dbg.c"
@@ -110,12 +95,7 @@ static inline void amd_iso_dev_put(void)
  * On architectures with edge-triggered interrupts we must never return
  * IRQ_NONE.
  */
-#if defined(CONFIG_SA1111)  /* ... or other edge-triggered systems */
-#define IRQ_NOTMINE	IRQ_HANDLED
-#else
 #define IRQ_NOTMINE	IRQ_NONE
-#endif
-
 
 /* Some boards misreport power switching/overcurrent */
 static int distrust_firmware = 1;
@@ -916,186 +896,11 @@ static void ohci_stop (struct usb_hcd *hcd)
 
 /*-------------------------------------------------------------------------*/
 
-#if defined(CONFIG_PM) || defined(CONFIG_PCI)
-
-/* must not be called from interrupt context */
-static int ohci_restart (struct ohci_hcd *ohci)
-{
-	int temp;
-	int i;
-	struct urb_priv *priv;
-
-	spin_lock_irq(&ohci->lock);
-	disable (ohci);
-
-	/* Recycle any "live" eds/tds (and urbs). */
-	if (!list_empty (&ohci->pending))
-		ohci_dbg(ohci, "abort schedule...\n");
-	list_for_each_entry (priv, &ohci->pending, pending) {
-		struct urb	*urb = priv->td[0]->urb;
-		struct ed	*ed = priv->ed;
-
-		switch (ed->state) {
-		case ED_OPER:
-			ed->state = ED_UNLINK;
-			ed->hwINFO |= cpu_to_hc32(ohci, ED_DEQUEUE);
-			ed_deschedule (ohci, ed);
-
-			ed->ed_next = ohci->ed_rm_list;
-			ed->ed_prev = NULL;
-			ohci->ed_rm_list = ed;
-			/* FALLTHROUGH */
-		case ED_UNLINK:
-			break;
-		default:
-			ohci_dbg(ohci, "bogus ed %p state %d\n",
-					ed, ed->state);
-		}
-
-		if (!urb->unlinked)
-			urb->unlinked = -ESHUTDOWN;
-	}
-	finish_unlinks (ohci, 0);
-	spin_unlock_irq(&ohci->lock);
-
-	/* paranoia, in case that didn't work: */
-
-	/* empty the interrupt branches */
-	for (i = 0; i < NUM_INTS; i++) ohci->load [i] = 0;
-	for (i = 0; i < NUM_INTS; i++) ohci->hcca->int_table [i] = 0;
-
-	/* no EDs to remove */
-	ohci->ed_rm_list = NULL;
-
-	/* empty control and bulk lists */
-	ohci->ed_controltail = NULL;
-	ohci->ed_bulktail    = NULL;
-
-	if ((temp = ohci_run (ohci)) < 0) {
-		ohci_err (ohci, "can't restart, %d\n", temp);
-		return temp;
-	}
-	ohci_dbg(ohci, "restart complete\n");
-	return 0;
-}
-
-#endif
-
-/*-------------------------------------------------------------------------*/
-
 MODULE_AUTHOR (DRIVER_AUTHOR);
 MODULE_DESCRIPTION(DRIVER_DESC);
 MODULE_LICENSE ("GPL");
 
-#ifdef CONFIG_PCI
-#include "ohci-pci.c"
-#define PCI_DRIVER		ohci_pci_driver
-#endif
-
-#if defined(CONFIG_ARCH_SA1100) && defined(CONFIG_SA1111)
-#include "ohci-sa1111.c"
-#define SA1111_DRIVER		ohci_hcd_sa1111_driver
-#endif
-
-#if defined(CONFIG_ARCH_S3C2410) || defined(CONFIG_ARCH_S3C64XX)
-#include "ohci-s3c2410.c"
-#define PLATFORM_DRIVER		ohci_hcd_s3c2410_driver
-#endif
-
-#ifdef CONFIG_ARCH_OMAP
-#include "ohci-omap.c"
-#define PLATFORM_DRIVER		ohci_hcd_omap_driver
-#endif
-
-#ifdef CONFIG_ARCH_LH7A404
-#include "ohci-lh7a404.c"
-#define PLATFORM_DRIVER		ohci_hcd_lh7a404_driver
-#endif
-
-#if defined(CONFIG_PXA27x) || defined(CONFIG_PXA3xx)
-#include "ohci-pxa27x.c"
-#define PLATFORM_DRIVER		ohci_hcd_pxa27x_driver
-#endif
-
-#ifdef CONFIG_ARCH_EP93XX
-#include "ohci-ep93xx.c"
-#define PLATFORM_DRIVER		ohci_hcd_ep93xx_driver
-#endif
-
-#ifdef CONFIG_SOC_AU1X00
-#include "ohci-au1xxx.c"
-#define PLATFORM_DRIVER		ohci_hcd_au1xxx_driver
-#endif
-
-#ifdef CONFIG_PNX8550
-#include "ohci-pnx8550.c"
-#define PLATFORM_DRIVER		ohci_hcd_pnx8550_driver
-#endif
-
-#ifdef CONFIG_USB_OHCI_HCD_PPC_SOC
-#include "ohci-ppc-soc.c"
-#define PLATFORM_DRIVER		ohci_hcd_ppc_soc_driver
-#endif
-
-#ifdef CONFIG_ARCH_AT91
-#include "ohci-at91.c"
-#define PLATFORM_DRIVER		ohci_hcd_at91_driver
-#endif
-
-#ifdef CONFIG_ARCH_PNX4008
-#include "ohci-pnx4008.c"
-#define PLATFORM_DRIVER		usb_hcd_pnx4008_driver
-#endif
-
-#if defined(CONFIG_CPU_SUBTYPE_SH7720) || \
-    defined(CONFIG_CPU_SUBTYPE_SH7721) || \
-    defined(CONFIG_CPU_SUBTYPE_SH7763) || \
-    defined(CONFIG_CPU_SUBTYPE_SH7786)
-#include "ohci-sh.c"
-#define PLATFORM_DRIVER		ohci_hcd_sh_driver
-#endif
-
-
-#ifdef CONFIG_USB_OHCI_HCD_PPC_OF
-#include "ohci-ppc-of.c"
-#define OF_PLATFORM_DRIVER	ohci_hcd_ppc_of_driver
-#endif
-
-#ifdef CONFIG_USB_OHCI_HCD_MIPC
 #include "ohci-mipc.c"
-#define OF_PLATFORM_DRIVER	ohci_hcd_mipc_driver
-#endif
-
-#ifdef CONFIG_PPC_PS3
-#include "ohci-ps3.c"
-#define PS3_SYSTEM_BUS_DRIVER	ps3_ohci_driver
-#endif
-
-#ifdef CONFIG_USB_OHCI_HCD_SSB
-#include "ohci-ssb.c"
-#define SSB_OHCI_DRIVER		ssb_ohci_driver
-#endif
-
-#ifdef CONFIG_MFD_SM501
-#include "ohci-sm501.c"
-#define SM501_OHCI_DRIVER	ohci_hcd_sm501_driver
-#endif
-
-#ifdef CONFIG_MFD_TC6393XB
-#include "ohci-tmio.c"
-#define TMIO_OHCI_DRIVER	ohci_hcd_tmio_driver
-#endif
-
-#if	!defined(PCI_DRIVER) &&		\
-	!defined(PLATFORM_DRIVER) &&	\
-	!defined(OF_PLATFORM_DRIVER) &&	\
-	!defined(SA1111_DRIVER) &&	\
-	!defined(PS3_SYSTEM_BUS_DRIVER) && \
-	!defined(SM501_OHCI_DRIVER) && \
-	!defined(TMIO_OHCI_DRIVER) && \
-	!defined(SSB_OHCI_DRIVER)
-#error "missing bus glue for ohci-hcd"
-#endif
 
 static int __init ohci_hcd_mod_init(void)
 {
@@ -1117,89 +922,15 @@ static int __init ohci_hcd_mod_init(void)
 	}
 #endif
 
-#ifdef PS3_SYSTEM_BUS_DRIVER
-	retval = ps3_ohci_driver_register(&PS3_SYSTEM_BUS_DRIVER);
-	if (retval < 0)
-		goto error_ps3;
-#endif
-
-#ifdef PLATFORM_DRIVER
 	retval = platform_driver_register(&PLATFORM_DRIVER);
 	if (retval < 0)
 		goto error_platform;
-#endif
-
-#ifdef OF_PLATFORM_DRIVER
-	retval = of_register_platform_driver(&OF_PLATFORM_DRIVER);
-	if (retval < 0)
-		goto error_of_platform;
-#endif
-
-#ifdef SA1111_DRIVER
-	retval = sa1111_driver_register(&SA1111_DRIVER);
-	if (retval < 0)
-		goto error_sa1111;
-#endif
-
-#ifdef PCI_DRIVER
-	retval = pci_register_driver(&PCI_DRIVER);
-	if (retval < 0)
-		goto error_pci;
-#endif
-
-#ifdef SSB_OHCI_DRIVER
-	retval = ssb_driver_register(&SSB_OHCI_DRIVER);
-	if (retval)
-		goto error_ssb;
-#endif
-
-#ifdef SM501_OHCI_DRIVER
-	retval = platform_driver_register(&SM501_OHCI_DRIVER);
-	if (retval < 0)
-		goto error_sm501;
-#endif
-
-#ifdef TMIO_OHCI_DRIVER
-	retval = platform_driver_register(&TMIO_OHCI_DRIVER);
-	if (retval < 0)
-		goto error_tmio;
-#endif
 
 	return retval;
 
-	/* Error path */
-#ifdef TMIO_OHCI_DRIVER
-	platform_driver_unregister(&TMIO_OHCI_DRIVER);
- error_tmio:
-#endif
-#ifdef SM501_OHCI_DRIVER
-	platform_driver_unregister(&SM501_OHCI_DRIVER);
- error_sm501:
-#endif
-#ifdef SSB_OHCI_DRIVER
-	ssb_driver_unregister(&SSB_OHCI_DRIVER);
- error_ssb:
-#endif
-#ifdef PCI_DRIVER
-	pci_unregister_driver(&PCI_DRIVER);
- error_pci:
-#endif
-#ifdef SA1111_DRIVER
-	sa1111_driver_unregister(&SA1111_DRIVER);
- error_sa1111:
-#endif
-#ifdef OF_PLATFORM_DRIVER
-	of_unregister_platform_driver(&OF_PLATFORM_DRIVER);
- error_of_platform:
-#endif
-#ifdef PLATFORM_DRIVER
 	platform_driver_unregister(&PLATFORM_DRIVER);
  error_platform:
-#endif
-#ifdef PS3_SYSTEM_BUS_DRIVER
-	ps3_ohci_driver_unregister(&PS3_SYSTEM_BUS_DRIVER);
- error_ps3:
-#endif
+
 #ifdef DEBUG
 	debugfs_remove(ohci_debug_root);
 	ohci_debug_root = NULL;
@@ -1213,30 +944,8 @@ module_init(ohci_hcd_mod_init);
 
 static void __exit ohci_hcd_mod_exit(void)
 {
-#ifdef TMIO_OHCI_DRIVER
-	platform_driver_unregister(&TMIO_OHCI_DRIVER);
-#endif
-#ifdef SM501_OHCI_DRIVER
-	platform_driver_unregister(&SM501_OHCI_DRIVER);
-#endif
-#ifdef SSB_OHCI_DRIVER
-	ssb_driver_unregister(&SSB_OHCI_DRIVER);
-#endif
-#ifdef PCI_DRIVER
-	pci_unregister_driver(&PCI_DRIVER);
-#endif
-#ifdef SA1111_DRIVER
-	sa1111_driver_unregister(&SA1111_DRIVER);
-#endif
-#ifdef OF_PLATFORM_DRIVER
-	of_unregister_platform_driver(&OF_PLATFORM_DRIVER);
-#endif
-#ifdef PLATFORM_DRIVER
 	platform_driver_unregister(&PLATFORM_DRIVER);
-#endif
-#ifdef PS3_SYSTEM_BUS_DRIVER
-	ps3_ohci_driver_unregister(&PS3_SYSTEM_BUS_DRIVER);
-#endif
+
 #ifdef DEBUG
 	debugfs_remove(ohci_debug_root);
 #endif
