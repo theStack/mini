@@ -15,6 +15,16 @@ typedef struct {
 	volatile int counter;
 } atomic_t;
 
+typedef struct pm_message {
+	int event;
+} pm_message_t;
+
+struct __wait_queue_head {
+	struct list_head task_list;
+};
+typedef struct __wait_queue_head wait_queue_head_t;
+
+
 #define BITS_PER_LONG 64
 
 #define __iomem

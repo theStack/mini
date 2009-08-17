@@ -176,7 +176,7 @@ struct usb_interface {
 	struct device dev;		/* interface specific device info */
 	struct device *usb_dev;
 	int pm_usage_cnt;		/* usage counter for autosuspend */
-	struct work_struct reset_ws;	/* for resets in atomic context */
+//	struct work_struct reset_ws;	/* for resets in atomic context */
 };
 #define	to_usb_interface(d) container_of(d, struct usb_interface, dev)
 #define	interface_to_usbdev(intf) \
@@ -767,18 +767,9 @@ struct usb_dynid {
 };
 
 extern ssize_t usb_store_new_id(struct usb_dynids *dynids,
-				struct device_driver *driver,
+				/*struct device_driver *driver,*/
 				const char *buf, size_t count);
 
-/**
- * struct usbdrv_wrap - wrapper for driver-model structure
- * @driver: The driver-model core driver structure.
- * @for_devices: Non-zero for device drivers, 0 for interface drivers.
- */
-struct usbdrv_wrap {
-	struct device_driver driver;
-	int for_devices;
-};
 
 /**
  * struct usb_driver - identifies USB interface driver to usbcore
@@ -855,7 +846,6 @@ struct usb_driver {
 	const struct usb_device_id *id_table;
 
 	struct usb_dynids dynids;
-	struct usbdrv_wrap drvwrap;
 	unsigned int no_dynamic_id:1;
 	unsigned int supports_autosuspend:1;
 	unsigned int soft_unbind:1;
@@ -889,7 +879,6 @@ struct usb_device_driver {
 
 	int (*suspend) (struct usb_device *udev, pm_message_t message);
 	int (*resume) (struct usb_device *udev, pm_message_t message);
-	struct usbdrv_wrap drvwrap;
 	unsigned int supports_autosuspend:1;
 };
 #define	to_usb_device_driver(d) container_of(d, struct usb_device_driver, \
@@ -917,16 +906,16 @@ struct usb_class_driver {
  * use these in module_init()/module_exit()
  * and don't forget MODULE_DEVICE_TABLE(usb, ...)
  */
-extern int usb_register_driver(struct usb_driver *, struct module *,
+extern int usb_register_driver(struct usb_driver * /*, struct module * */,
 			       const char *);
 static inline int usb_register(struct usb_driver *driver)
 {
-	return usb_register_driver(driver, THIS_MODULE, KBUILD_MODNAME);
+	return usb_register_driver(driver, "wii hax0r");
 }
 extern void usb_deregister(struct usb_driver *);
 
-extern int usb_register_device_driver(struct usb_device_driver *,
-			struct module *);
+extern int usb_register_device_driver(struct usb_device_driver * /*,
+			struct module * */);
 extern void usb_deregister_device_driver(struct usb_device_driver *);
 
 extern int usb_register_dev(struct usb_interface *intf,
@@ -974,7 +963,7 @@ struct urb;
 struct usb_anchor {
 	struct list_head urb_list;
 	wait_queue_head_t wait;
-	spinlock_t lock;
+	//spinlock_t lock;
 	unsigned int poisoned:1;
 };
 
