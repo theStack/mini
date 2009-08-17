@@ -1,3 +1,5 @@
+#include "ch9.h"
+
 #define USB_MAJOR			180
 #define USB_DEVICE_MAJOR		189
 
@@ -179,15 +181,19 @@ struct usb_interface {
 #define	interface_to_usbdev(intf) \
 	container_of(intf->dev.parent, struct usb_device, dev)
 
+/*
 static inline void *usb_get_intfdata(struct usb_interface *intf)
 {
 	return dev_get_drvdata(&intf->dev);
 }
+*/
 
+/*
 static inline void usb_set_intfdata(struct usb_interface *intf, void *data)
 {
 	dev_set_drvdata(&intf->dev, data);
 }
+*/
 
 struct usb_interface *usb_get_intf(struct usb_interface *intf);
 void usb_put_intf(struct usb_interface *intf);
@@ -212,7 +218,6 @@ void usb_put_intf(struct usb_interface *intf);
  */
 struct usb_interface_cache {
 	unsigned num_altsetting;	/* number of alternate settings */
-	struct kref ref;		/* reference counter */
 
 	/* variable-length array of alternate settings for this interface,
 	 * stored in no particular order */
@@ -584,7 +589,7 @@ extern int usb_driver_claim_interface(struct usb_driver *driver,
  */
 static inline int usb_interface_claimed(struct usb_interface *iface)
 {
-	return (iface->dev.driver != NULL);
+	return 1; //(iface->dev.driver != NULL);
 }
 
 extern void usb_driver_release_interface(struct usb_driver *driver,
@@ -629,8 +634,7 @@ extern struct usb_host_interface *usb_altnum_to_altsetting(
 static inline int usb_make_path(struct usb_device *dev, char *buf, size_t size)
 {
 	int actual;
-	actual = snprintf(buf, size, "usb-%s-%s", dev->bus->bus_name,
-			  dev->devpath);
+	//actual = snprintf(buf, size, "usb-%s-%s", dev->bus->bus_name,dev->devpath);
 	return (actual >= (int)size) ? -1 : actual;
 }
 
